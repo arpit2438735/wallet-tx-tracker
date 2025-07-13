@@ -9,9 +9,10 @@ const address = process.argv[2];
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
-
 if (!address) {
-  console.error('❌ Please provide an Ethereum address.\nExample: node index.js 0xYourWalletAddress');
+  console.error(
+    '❌ Please provide an Ethereum address.\nExample: node index.js 0xYourWalletAddress'
+  );
   process.exit(1);
 }
 
@@ -21,48 +22,50 @@ if (!fs.existsSync(outputDir)) {
 }
 
 function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetchPaginatedTxs(urlBuilder) {
-    const allResults = [];
-    let page = 1;
-    const offset = 10000;
-  
-    while (true) {
-      const url = urlBuilder(page, offset);
-      const response = await axios.get(url);
-      const result = response.data.result || [];
-  
-      allResults.push(...result);
-      console.log(`Fetched page ${page} with ${result.length} transactions`);
-  
-      if (result.length < offset) break;
-      page++;
-      await delay(1100);
-    }
-  
-    return allResults;
+  const allResults = [];
+  let page = 1;
+  const offset = 10000;
+
+  while (true) {
+    const url = urlBuilder(page, offset);
+    const response = await axios.get(url);
+    const result = response.data.result || [];
+
+    allResults.push(...result);
+    console.log(`Fetched page ${page} with ${result.length} transactions`);
+
+    if (result.length < offset) break;
+    page++;
+    await delay(1100);
   }
-  
+
+  return allResults;
+}
 
 async function fetchNormalTransactions(address) {
-  return fetchPaginatedTxs((page, offset) =>
-    `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+  return fetchPaginatedTxs(
+    (page, offset) =>
+      `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
   );
 }
 
 // ERC-20 Transfers
 async function fetchERC20Transfers(address) {
-  return fetchPaginatedTxs((page, offset) =>
-    `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+  return fetchPaginatedTxs(
+    (page, offset) =>
+      `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
   );
 }
 
 // ERC-721 Transfers
 async function fetchERC721Transfers(address) {
-  return fetchPaginatedTxs((page, offset) =>
-    `https://api.etherscan.io/api?module=account&action=tokennfttx&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+  return fetchPaginatedTxs(
+    (page, offset) =>
+      `https://api.etherscan.io/api?module=account&action=tokennfttx&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
   );
 }
 
@@ -92,7 +95,7 @@ async function exportToCsv(records) {
       fetchERC721Transfers(address),
     ]);
 
-    const ethRecords = ethTxs.map(tx => {
+    const ethRecords = ethTxs.map((tx) => {
       // Convert value from wei to ETH by dividing by 10^18
       const valueEth = parseFloat(tx.value) / 1e18;
       const gasFeeEth = (parseFloat(tx.gasPrice) * parseFloat(tx.gasUsed)) / 1e18;
@@ -111,7 +114,7 @@ async function exportToCsv(records) {
       };
     });
 
-    const erc20Records = erc20Txs.map(tx => ({
+    const erc20Records = erc20Txs.map((tx) => ({
       hash: tx.hash,
       timestamp: dayjs.unix(tx.timeStamp).format('YYYY-MM-DD HH:mm:ss'),
       from: tx.from,
@@ -124,7 +127,7 @@ async function exportToCsv(records) {
       gasFee: '',
     }));
 
-    const erc721Records = erc721Txs.map(tx => ({
+    const erc721Records = erc721Txs.map((tx) => ({
       hash: tx.hash,
       timestamp: dayjs.unix(tx.timeStamp).format('YYYY-MM-DD HH:mm:ss'),
       from: tx.from,
@@ -140,7 +143,6 @@ async function exportToCsv(records) {
     const allTxs = [...ethRecords, ...erc20Records, ...erc721Records];
 
     await exportToCsv(allTxs);
-
   } catch (err) {
     console.error('Error:', err.message);
   }

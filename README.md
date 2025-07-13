@@ -30,16 +30,19 @@ npm install
 🛠 Usage
 
 🔸 Command to Run
+
 ```bash
 node index.js <your_ethereum_wallet_address>
 ```
 
 🔸 Example
+
 ```bash
 node index.js 0xa39b189482f984388a34460636fea9eb181ad1a6
 ```
 
 The script will output a file at:
+
 ```bash
 data/transactions.csv
 ```
