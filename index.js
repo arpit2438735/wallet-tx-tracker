@@ -1,5 +1,6 @@
 require('dotenv').config();
 const fs = require('fs');
+const path = require('path');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const dayjs = require('dayjs');
 const axios = require('axios');
@@ -14,40 +15,55 @@ if (!address) {
   process.exit(1);
 }
 
+const outputDir = path.resolve(__dirname, 'data');
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir);
+}
+
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function fetchNormalTransactions(walletAddress) {
-  const url = `https://api.etherscan.io/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&page=1&offset=10000&sort=asc&apikey=${ETHERSCAN_API_KEY}`;
-  const response = await axios.get(url);
-  return response.data.result || [];
+async function fetchPaginatedTxs(urlBuilder) {
+    const allResults = [];
+    let page = 1;
+    const offset = 10000;
+  
+    while (true) {
+      const url = urlBuilder(page, offset);
+      const response = await axios.get(url);
+      const result = response.data.result || [];
+  
+      allResults.push(...result);
+      console.log(`Fetched page ${page} with ${result.length} transactions`);
+  
+      if (result.length < offset) break;
+      page++;
+      await delay(1100);
+    }
+  
+    return allResults;
+  }
+  
+
+async function fetchNormalTransactions(address) {
+  return fetchPaginatedTxs((page, offset) =>
+    `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+  );
 }
 
-// Fetch ERC-20 Transfers
-async function fetchERC20Transfers(walletAddress) {
-  await delay(1000);
-  const url = `https://api.etherscan.io/api?module=account&action=tokentx&address=${walletAddress}&page=1&offset=10000&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.ETHERSCAN_API_KEY}`;
-    
-  try {
-    const response = await axios.get(url);
-    return response.data.result || [];
-  } catch (err) {
-    return [];
-  }
+// ERC-20 Transfers
+async function fetchERC20Transfers(address) {
+  return fetchPaginatedTxs((page, offset) =>
+    `https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+  );
 }
-  
-// Fetch ERC-721 Transfers
-async function fetchERC721Transfers(walletAddress) {
-  await delay(1000);
-  const url = `https://api.etherscan.io/api?module=account&action=tokennfttx&address=${walletAddress}&page=1&offset=10000&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.ETHERSCAN_API_KEY}`;
-  
-  try {
-    const response = await axios.get(url);
-    return response.data.result || [];
-  } catch (err) {
-    return [];
-   }
+
+// ERC-721 Transfers
+async function fetchERC721Transfers(address) {
+  return fetchPaginatedTxs((page, offset) =>
+    `https://api.etherscan.io/api?module=account&action=tokennfttx&address=${address}&startblock=0&endblock=99999999&page=${page}&offset=${offset}&sort=asc&apikey=${ETHERSCAN_API_KEY}`
+  );
 }
 
 async function exportToCsv(records) {
