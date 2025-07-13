@@ -3,7 +3,6 @@
     "axios": "^1.10.0",
     "csv-writer": "^1.6.0",
     "dayjs": "^1.11.13",
-    "dotenv": "^17.2.0",
-    "etherscan-api": "^10.3.0"
+    "dotenv": "^17.2.0"
   }
 }
