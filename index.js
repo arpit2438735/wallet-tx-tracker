@@ -4,6 +4,7 @@ const path = require('path');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const dayjs = require('dayjs');
 const axios = require('axios');
+const { fetchPaginatedTxs } = require('./utils/fetchPaginatedTxs');
 
 const address = process.argv[2];
 
@@ -19,31 +20,6 @@ if (!address) {
 const outputDir = path.resolve(__dirname, 'data');
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir);
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fetchPaginatedTxs(urlBuilder) {
-  const allResults = [];
-  let page = 1;
-  const offset = 10000;
-
-  while (true) {
-    const url = urlBuilder(page, offset);
-    const response = await axios.get(url);
-    const result = response.data.result || [];
-
-    allResults.push(...result);
-    console.log(`Fetched page ${page} with ${result.length} transactions`);
-
-    if (result.length < offset) break;
-    page++;
-    await delay(1100);
-  }
-
-  return allResults;
 }
 
 async function fetchNormalTransactions(address) {
