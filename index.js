@@ -4,9 +4,15 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const dayjs = require('dayjs');
 const axios = require('axios');
 
-const address = '0xa39b189482f984388a34460636fea9eb181ad1a6';
+const address = process.argv[2];
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+
+
+if (!address) {
+  console.error('❌ Please provide an Ethereum address.\nExample: node index.js 0xYourWalletAddress');
+  process.exit(1);
+}
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
